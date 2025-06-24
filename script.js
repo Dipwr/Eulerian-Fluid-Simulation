@@ -1,8 +1,8 @@
 
 
 function Fluid(){
-    this.gridDim = [100,100];
-    this.cellSize = 25;
+    this.gridDim = [1000,1000];
+    this.cellSize = 10;
 
     this.x = this.gridDim[0]/this.cellSize;
     this.y = this.gridDim[1]/this.cellSize;
@@ -17,7 +17,7 @@ function Fluid(){
 
         for (let i = 0; i < this.x+1; i++){
             for (let j = 0; j < this.y; j++){
-                if (i==0 || i==this.x){
+                if ((j <= 1 || j >= this.y-2) || (i == 0 || i == this.x)){
                     this.points[i*2][j] = new Point([this.cellSize*i, this.cellSize*(0.5+j)], 0, 0, true); //left point
                 }else {
                     this.points[i*2][j] = new Point([this.cellSize*i, this.cellSize*(0.5+j)], 0, 0, false); //left point
@@ -26,7 +26,7 @@ function Fluid(){
         }
         for (let i = 0; i < this.x; i++){
             for (let j = 0; j < this.y+1; j++){
-                if (j==0 || j==this.y){
+                if ((j <= 1 || j >= this.y-1) || (i == 0 || i == this.x-1)){
                     this.points[(i*2)+1][j] = new Point([this.cellSize*(0.5+i), this.cellSize*(j)], 0, 0, true); //left point
                 }else{
                     this.points[(i*2)+1][j] = new Point([this.cellSize*(0.5+i), this.cellSize*(j)], 0, 0, false); //left point
@@ -64,6 +64,56 @@ function Fluid(){
         }
     }
 
+    this.advect = function(dt){
+        for (let i = 2; i < (this.x*2)-1; i++){
+            for (let j = 2; j < this.points[i].length-2; j++){
+                let point = []
+
+                // --- advect velocities ---
+
+                if (i % 2 == 0){
+                    //horizontal velocities
+                    let vel = []
+                    vel[0] = this.points[i][j].vel;
+
+                    let verticalVelAcc = this.points[i-1][j].vel + this.points[i-1][j+1].vel + this.points[i+1][j].vel + this.points[i+1][j+1].vel;
+                    vel[1] = verticalVelAcc/4;
+
+                    point[0] = this.points[i][j].pos[0] - (vel[0] * dt);
+                    point[1] = this.points[i][j].pos[1] - (vel[1] * dt);
+
+                    let pX = Math.floor(point[0]/this.cellSize)*2;
+                    let pY = Math.floor((point[1]/this.cellSize)+0.5);
+
+                    let interpolation1 = lerp(this.points[pX][pY-1].vel, this.points[pX][pY].vel, ((point[1]/this.cellSize) - 0.5) % 1);
+                    let interpolation2 = lerp(this.points[pX+2][pY-1].vel, this.points[pX+2][pY].vel, ((point[1]/this.cellSize) - 0.5) % 1);
+                    let interpolation3 = lerp(interpolation1, interpolation2, (point[0]/this.cellSize) % 1);
+
+                    this.points[i][j].vel = interpolation3;
+                }else{
+                    //vertical velocities
+                    let vel = []
+                    vel[1] = this.points[i][j].vel;
+
+                    let verticalVelAcc = this.points[i-1][j-1].vel + this.points[i-1][j].vel + this.points[i+1][j-1].vel + this.points[i+1][j].vel;
+                    vel[0] = verticalVelAcc/4;
+
+                    point[0] = this.points[i][j].pos[0] - (vel[0] * dt);
+                    point[1] = this.points[i][j].pos[1] - (vel[1] * dt);
+
+                    let pX = (Math.floor(point[0]/this.cellSize)*2) + 1;
+                    let pY = Math.ceil(point[1]/this.cellSize);
+
+                    let interpolation1 = lerp(this.points[pX][pY-1].vel, this.points[pX][pY].vel, (point[1]/this.cellSize) % 1);
+                    let interpolation2 = lerp(this.points[pX+2][pY-1].vel, this.points[pX+2][pY].vel, (point[1]/this.cellSize) % 1);
+                    let interpolation3 = lerp(interpolation1, interpolation2, ((point[0]/this.cellSize) - 0.5) % 1);
+
+                    this.points[i][j].vel = interpolation3;
+                }
+            }
+        }
+    }
+
     this.cellToPoints = function(x,y){
         return [[2*x, y],[(2*x)+1, y],[2*(x+1), y],[(2*x)+1, y+1]]//left, up, right, down
     }
@@ -77,7 +127,27 @@ function Point(pos, vel, smokeDen, skipAdvection){
     this.skipAdvection = skipAdvection;
 }
 
+function lerp( a, b, alpha ) {
+    return a + alpha * (b - a);
+}
+
 let fluid = new Fluid();
 fluid.setup();
-fluid.points[0][1].vel = 10;
-fluid.makeIncompressible(20);
+fluid.points[0][3].vel = 5;
+fluid.makeIncompressible(2);
+fluid.advect(1);
+fluid.makeIncompressible(2);
+fluid.advect(1);
+fluid.makeIncompressible(2);
+fluid.advect(1);
+fluid.makeIncompressible(2);
+fluid.advect(1);
+fluid.makeIncompressible(2);
+fluid.advect(1);
+fluid.makeIncompressible(2);
+fluid.advect(1);
+fluid.makeIncompressible(2);
+fluid.advect(1);
+fluid.makeIncompressible(2);
+fluid.advect(1);
+fluid.makeIncompressible(2);
