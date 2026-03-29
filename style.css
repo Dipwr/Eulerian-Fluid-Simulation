@@ -1,0 +1,175 @@
+
+#ui-panel {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 240px;
+    background-color: rgba(20, 20, 20, 0.85);
+    color: #eeeeee;
+    padding: 15px;
+    border-radius: 8px;
+    font-family: monospace;
+    box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.5);
+    user-select: none; /* Prevents text selection while dragging sliders */
+}
+
+#ui-panel h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+    color: #00FF00;
+    border-bottom: 1px solid #444;
+    padding-bottom: 5px;
+}
+
+.control-group {
+    margin-bottom: 12px;
+    display: flex;
+    flex-direction: column;
+}
+
+.control-group label {
+    font-size: 13px;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.control-group span {
+    color: #00aaaa;
+    float: right;
+}
+
+input[type=range] {
+    width: 100%;
+    cursor: pointer;
+}
+
+input[type=checkbox] {
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+}
+
+hr {
+    border: 0;
+    border-top: 1px solid #444;
+    margin: 15px 0;
+}
+
+select {
+		width: 100%;
+		padding: 5px;
+		background-color: #333;
+		color: #eeeeee;
+		border: 1px solid #555;
+		border-radius: 4px;
+		font-family: monospace;
+		margin-top: 4px;
+		cursor: pointer;
+	}
+
+select:focus {
+    outline: none;
+    border-color: #00FF00;
+}
+
+.collapsible {
+	margin-bottom: 5px;
+	border: 1px solid #444;
+	border-radius: 4px;
+	overflow: hidden;
+}
+
+.collapsible-header {
+	background-color: #333;
+	color: #00FF00;
+	cursor: pointer;
+	padding: 10px;
+	width: 100%;
+	border: none;
+	text-align: left;
+	outline: none;
+	font-family: monospace;
+	font-weight: bold;
+	display: flex;
+	justify-content: space-between;
+}
+
+.collapsible-header:hover {
+	background-color: #444;
+}
+
+/* Arrow indicator for the header */
+.collapsible-header::after {
+	content: '\25BC'; /* Down arrow */
+	font-size: 10px;
+}
+
+.collapsible.active .collapsible-header::after {
+	content: '\25B2'; /* Up arrow */
+}
+
+.collapsible-content {
+	padding: 0 10px;
+	max-height: 0;
+	overflow: hidden;
+	transition: max-height 0.2s ease-out, padding 0.2s ease-out;
+	background-color: rgba(30, 30, 30, 0.5);
+}
+
+.collapsible.active .collapsible-content {
+	max-height: 500px; /* Large enough to fit content */
+	padding: 10px;
+}
+
+#btn-restart {
+    margin-top: 10px;
+    width: 100%;
+    padding: 8px;
+    background-color: #008800;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-family: monospace;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#btn-restart:hover {
+    background-color: #00FF00;
+    color: black;
+}
+
+/* Style for number inputs to match dropdowns */
+input[type="number"] {
+    background-color: #333;
+    color: #eee;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 4px;
+    font-family: monospace;
+}
+input[type="number"]:disabled {
+    background-color: #222;
+    color: #777;
+    cursor: not-allowed;
+}
+
+.action-btn {
+		margin-top: 10px;
+		width: 100%;
+		padding: 8px;
+		background-color: #008800;
+		color: white;
+		border: none;
+		border-radius: 4px;
+		font-family: monospace;
+		font-weight: bold;
+		cursor: pointer;
+	}
+
+	.action-btn:hover {
+		background-color: #00FF00;
+		color: black;
+	}

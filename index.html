@@ -4,8 +4,198 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <canvas id="simulation"></canvas>
+    <div id="ui-panel">
+        <h3>Fluid Controls</h3>
+        <div class="collapsible">
+            <button class="collapsible-header">Grid Setup (Restarts Sim)</button>
+            <div class="collapsible-content">
+                <div class="control-group">
+                    <label>Canvas Width (px):</label>
+                    <input type="number" id="input-width" value="1500" step="100" style="width: 100%;">
+                </div>
+                <div class="control-group">
+                    <label>Grid X (Cells):</label>
+                    <input type="number" id="input-gridx" value="200" step="10" style="width: 100%;">
+                </div>
+                <div class="control-group">
+                    <label><input type="checkbox" id="check-aspect" checked> Lock Aspect Ratio (X/Y)</label>
+                </div>
+                <div class="control-group">
+                    <label>Aspect Ratio:</label>
+                    <input type="number" id="input-aspect" value="2.33" step="0.01" style="width: 100%;">
+                </div>
+                <div class="control-group">
+                    <label>Grid Y (Cells):</label>
+                    <input type="number" id="input-gridy" value="85" step="5" disabled style="width: 100%;">
+                </div>
+                <div class="control-group">
+                    <button id="btn-restart">Apply & Restart</button>
+                </div>
+            </div>
+        </div>
+        <div class="collapsible">
+            <button class="collapsible-header">Simulation Physics</button>
+            <div class="collapsible-content">
+                <div class="control-group">
+                    <label>Integration Method:</label>
+                    <select id="select-integration">
+                        <option value="e">Euler</option>
+                        <option value="rk2" selected>RK2</option>
+                        <option value="rk4">RK4</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Solver Iterations: <span id="val-iters">100</span></label>
+                    <input type="range" id="slide-iters" min="1" max="300" step="1" value="100">
+                </div>
+                <div class="control-group">
+                    <label>Overrelaxation: <span id="val-over">1.90</span></label>
+                    <input type="range" id="slide-over" min="1.0" max="1.99" step="0.01" value="1.90">
+                </div>
+                <div class="control-group">
+                    <label>Time Step (dt): <span id="val-dt">0.016</span></label>
+                    <input type="range" id="slide-dt" min="0.005" max="0.1" step="0.001" value="0.016">
+                </div>
+            </div>
+        </div>
+
+        <div class="collapsible">
+            <button class="collapsible-header">Visualisation Options</button>
+            <div class="collapsible-content">
+                <div class="control-group">
+                    <label>Display Mode:</label>
+                    <select id="select-mode">
+                        <option value="s" selected>Smoke & Obstacles</option>
+                        <option value="p">Pressure Field</option>
+                        <option value="f">Velocity (Faces)</option>
+                        <option value="c">Velocity (Center)</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Pressure Sensitivity: <span id="val-psens">0.010</span></label>
+                    <input type="range" id="slide-psens" min="0.001" max="0.1" step="0.001" value="0.010">
+                </div>
+                <div class="control-group">
+                    <label>Target FPS: <span id="val-targetfps">60</span></label>
+                    <input type="range" id="slide-targetfps" min="1" max="240" step="1" value="60">
+                </div>
+                <div class="control-group">
+                    <label><input type="checkbox" id="check-fps" checked> Lock FPS</label>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="collapsible">
+            <button class="collapsible-header">Velocity Arrows</button>
+            <div class="collapsible-content">
+                <div class="control-group">
+                    <label><input type="checkbox" id="check-arrows"> Enable Vectors (V)</label>
+                </div>
+                <div class="control-group">
+                    <label>Spacing: <span id="val-aspacing">4.0</span></label>
+                    <input type="range" id="slide-aspacing" min="-1" max="1.7" step="0.01" value="0.6">
+                </div>
+                <div class="control-group">
+                    <label>Scale: <span id="val-ascale">0.50</span></label>
+                    <input type="range" id="slide-ascale" min="-2" max="1" step="0.01" value="-0.3">
+                </div>
+                <div class="control-group">
+				<label>Arrow Color:</label>
+				<input type="color" id="color-arrow" value="#00ffff" style="padding: 0; cursor: pointer; height: 25px; border-radius: 4px; border: 1px solid #555;">
+			</div>
+            </div>
+        </div>
+
+        <div class="collapsible">
+            <button class="collapsible-header">Brush Options</button>
+            <div class="collapsible-content">
+                <div class="control-group">
+                    <label>Brush Size: <span id="val-brush">4.0</span></label>
+                    <input type="range" id="slide-brush" min="1" max="50" step="0.5" value="4">
+                </div>
+                <div class="control-group">
+                    <label><input type="checkbox" id="check-preview"> Show Brush Preview</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="collapsible">
+            <button class="collapsible-header">Environment Settings</button>
+            <div class="collapsible-content">
+                <div class="control-group">
+                    <label>Boundary Walls:</label>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 5px;">
+                        <label><input type="checkbox" id="check-wall-top" checked> Top</label>
+                        <label><input type="checkbox" id="check-wall-bottom" checked> Bottom</label>
+                        <label><input type="checkbox" id="check-wall-left" checked> Left</label>
+                        <label><input type="checkbox" id="check-wall-right"> Right</label>
+                    </div>
+                </div>
+                <hr>
+                <div class="control-group">
+                    <label>Obstacle Color:</label>
+                    <input type="color" id="color-obstacle" value="#000055" style="padding: 0; cursor: pointer; height: 25px; border-radius: 4px; border: 1px solid #555;">
+                </div>
+                <hr>
+                <div class="control-group">
+                    <label><input type="checkbox" id="check-wind" checked> Wind Tunnel Base Flow</label>
+                </div>
+                <div class="control-group">
+                    <label>Wind Velocity: <span id="val-wind-vel">100</span></label>
+                    <input type="range" id="slide-wind-vel" min="0" max="300" step="5" value="100">
+                </div>
+                <hr>
+                <div class="control-group">
+                    <label><input type="checkbox" id="check-smoke" checked> Enable Smoke Emitter</label>
+                </div>
+                <div class="control-group">
+                    <label>Smoke Height: <span id="val-smoke-h">10</span></label>
+                    <input type="range" id="slide-smoke-h" min="1" max="50" step="1" value="10">
+                </div>
+                <div class="control-group">
+                    <label>Smoke Y Position (%): <span id="val-smoke-y">50</span></label>
+                    <input type="range" id="slide-smoke-y" min="0" max="100" step="1" value="50">
+                </div>
+            </div>
+        </div>
+
+        <div class="collapsible">
+            <button class="collapsible-header">Import Obstacle (PNG/SVG)</button>
+            <div class="collapsible-content">
+                <div class="control-group">
+                    <label>Select File (Transparent BG):</label>
+                    <input type="file" id="input-file" accept="image/png, image/svg+xml" style="width: 100%; color: #eee; margin-top: 5px;">
+                </div>
+                <div class="control-group">
+                    <label>Scale: <span id="val-img-scale">0.50</span></label>
+                    <input type="range" id="slide-img-scale" min="-2" max="1" step="0.01" value="-0.3">
+                </div>
+                <div class="control-group">
+                    <label>Offset X (Grid Cells): <span id="val-img-x">50</span></label>
+                    <input type="range" id="slide-img-x" min="-50" max="500" step="1" value="50">
+                </div>
+                <div class="control-group">
+                    <label>Offset Y (Grid Cells): <span id="val-img-y">35</span></label>
+                    <input type="range" id="slide-img-y" min="-50" max="300" step="1" value="35">
+                </div>
+                <div class="control-group">
+                    <label>Rotation (Degrees): <span id="val-img-rot">0</span></label>
+                    <input type="range" id="slide-img-rot" min="-180" max="180" step="1" value="0">
+                </div>
+                <div class="control-group">
+                    <label><input type="checkbox" id="check-img-preview" checked> Show Ghost Preview</label>
+                </div>
+                <div class="control-group">
+                    <button id="btn-import" class="action-btn">Place on Grid</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <script src="script.js"></script>
 </body>
 </html>
