@@ -56,7 +56,7 @@
                     <label>Overrelaxation: <span id="val-over">1.90</span></label>
                     <input type="range" id="slide-over" min="1.0" max="1.99" step="0.01" value="1.90">
                 </div>
-                <div class="control-group">
+                <div class="control-group" id="group-dt">
                     <label>Time Step (dt): <span id="val-dt">0.016</span></label>
                     <input type="range" id="slide-dt" min="0.005" max="0.1" step="0.001" value="0.016">
                 </div>
@@ -71,20 +71,24 @@
                     <select id="select-mode">
                         <option value="s" selected>Smoke & Obstacles</option>
                         <option value="p">Pressure Field</option>
+                        <option value="sp">Pressure & Smoke</option>
                         <option value="f">Velocity (Faces)</option>
                         <option value="c">Velocity (Center)</option>
                     </select>
                 </div>
-                <div class="control-group">
+                <div class="control-group" id="group-psens">
                     <label>Pressure Sensitivity: <span id="val-psens">0.010</span></label>
                     <input type="range" id="slide-psens" min="0.001" max="0.1" step="0.001" value="0.010">
                 </div>
-                <div class="control-group">
-                    <label>Target FPS: <span id="val-targetfps">60</span></label>
-                    <input type="range" id="slide-targetfps" min="1" max="240" step="1" value="60">
+                <div class="control-group" id="group-invert-sp">
+                    <label><input type="checkbox" id="check-invert-sp"> Colorize Smoke by Pressure</label>
                 </div>
                 <div class="control-group">
                     <label><input type="checkbox" id="check-fps" checked> Lock FPS</label>
+                </div>
+                <div class="control-group" id="group-targetfps">
+                    <label>Target FPS: <span id="val-targetfps">60</span></label>
+                    <input type="range" id="slide-targetfps" min="10" max="240" step="1" value="60">
                 </div>
             </div>
         </div>
@@ -117,6 +121,13 @@
                 <div class="control-group">
                     <label>Brush Size: <span id="val-brush">4.0</span></label>
                     <input type="range" id="slide-brush" min="1" max="50" step="0.5" value="4">
+                </div>
+                <div class="control-group">
+                    <label>Brush Mode:</label>
+                    <select id="select-brush-mode">
+                        <option value="obstacle" selected>Obstacle (Solid)</option>
+                        <option value="smoke">Smoke (Fluid)</option>
+                    </select>
                 </div>
                 <div class="control-group">
                     <label><input type="checkbox" id="check-preview"> Show Brush Preview</label>

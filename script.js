@@ -35,7 +35,7 @@ function Fluid(numX, numY, h){
 	
 	this.makeIncompressible = function(iterations) {
 		let n = this.numY;
-		if (this.showMode == "p") this.p.fill(0.0);
+		if (this.showMode == "p" || this.showMode == "sp") this.p.fill(0.0);
 		for (let iter = 0; iter < iterations; iter++) {
 			for (let i = 1; i < this.numX - 1; i++) {
 				for (let j = 1; j < this.numY - 1; j++) {
@@ -58,7 +58,7 @@ function Fluid(numX, numY, h){
 					let correction = -div / s;
 					correction *= this.overrelaxation;
 					// 3. Accumulate into the pressure field
-					if (this.showMode == "p") this.p[i * n + j] += correction;
+					if (this.showMode == "p" || this.showMode == "sp") this.p[i * n + j] += correction;
 
 
 					// 4. Apply velocity updates as you did before
@@ -83,7 +83,7 @@ function Fluid(numX, numY, h){
 			for (let j = 1; j < this.numY - 1; j++) {
 				if (this.s[i * n + j] == 0.0) continue;
 				
-				if (this.showMode == "s") this.advectField(i, j, dt); //M field
+				if (this.showMode == "s" || this.showMode == "sp") this.advectField(i, j, dt); //M field
 				
 				if (this.s[(i-1) * n + j] == 1.0){
 					this.advectField(i, j, dt, "U");
@@ -287,15 +287,35 @@ function Fluid(numX, numY, h){
 					ctx.fillStyle = `rgb(${smoke}, ${smoke}, ${smoke})`;
 					if (this.s[idx] === 0.0) ctx.fillStyle = obstacleColor;
 					ctx.fillRect(x, y, drawH, drawH);
-				} else if (this.showMode === "p") {
+				} else if (this.showMode === "p" || this.showMode === "sp") {
+					// 1. Draw solid obstacles
 					if (this.s[idx] === 0.0) {
-						ctx.fillStyle = "rgb(0, 0, 0)"
+						// Use your custom obstacle color if defined, otherwise default to black
+						ctx.fillStyle = typeof obstacleColor !== 'undefined' ? obstacleColor : "rgb(0, 0, 0)";
 						ctx.fillRect(x, y, drawH, drawH);
 						continue;
-					};
+					}
 					
-					let softIntensity = Math.tanh(this.p[idx]*this.pressureVisSensitivity); 
+					// 2. Calculate the base Pressure color
+					let softIntensity = Math.tanh(this.p[idx] * this.pressureVisSensitivity); 
 					let c = getSciColor(softIntensity, -1, 1);
+
+					// 3. If in combined mode, use the smoke to darken the pressure color
+					if (this.showMode === "sp") {
+						let density = clamp(this.m[idx], 0, 1);
+						
+						if (invertSmokePressure) {
+							// Smoke becomes the color, empty space becomes black
+							c[0] *= density;
+							c[1] *= density;
+							c[2] *= density;
+						} else {
+							// Smoke acts as a dark shadow over the colored pressure field
+							c[0] *= (1 - density);
+							c[1] *= (1 - density);
+							c[2] *= (1 - density);
+						}
+					}
 
 					ctx.fillStyle = `rgb(${c[0]}, ${c[1]}, ${c[2]})`;
 					ctx.fillRect(x, y, drawH, drawH);
@@ -309,7 +329,7 @@ function Fluid(numX, numY, h){
 				
 			}
 		}
-		if (this.showMode == "s" || this.showMode == "p") return;
+		if (this.showMode != "f" || this.showMode != "c") return;
 
 		
 		// --- PASS 2: DRAW VECTORS ---
@@ -480,7 +500,7 @@ function Fluid(numX, numY, h){
 		};
 	};
 
-	this.modifyObstacle = function(mouseX, mouseY, radius, type) {
+	this.applyBrush = function(mouseX, mouseY, radius, action, mode) {
 		let n = this.numY;
 		let gridX = (mouseX - 50) / this.h;
 		let gridY = (mouseY - 50) / this.h;
@@ -499,16 +519,26 @@ function Fluid(numX, numY, h){
 				if (distSq < radius * radius) {
 					const idx = i * n + j;
 					
-					if (type === "add") {
-						this.s[idx] = 0.0;
-						this.m[idx] = 0.0; // Clear smoke inside solid
-						// Zero velocities on the faces of this cell
-						this.u[idx] = 0;
-						this.u[(i+1)*n + j] = 0;
-						this.v[idx] = 0;
-						this.v[i*n + j+1] = 0;
-					} else {
-						this.s[idx] = 1.0; // Erase (return to fluid)
+					if (mode === "obstacle") {
+						if (action === "add") {
+							this.s[idx] = 0.0;
+							this.m[idx] = 0.0; // Clear smoke inside solid
+							this.u[idx] = 0;
+							this.u[(i+1)*n + j] = 0;
+							this.v[idx] = 0;
+							this.v[i*n + j+1] = 0;
+						} else {
+							this.s[idx] = 1.0; // Erase obstacle
+						}
+					} else if (mode === "smoke") {
+						// Only paint smoke if the cell isn't a solid obstacle
+						if (this.s[idx] !== 0.0) {
+							if (action === "add") {
+								this.m[idx] = 1.0; // Inject heavy smoke
+							} else {
+								this.m[idx] = 0.0; // Vacuum up smoke
+							}
+						}
 					}
 				}
 			}
@@ -650,7 +680,7 @@ function updateEmitters() {
 
 	// Add the base wind flow
 	if (windEnabled) {
-		fluid.addEmitter(0, 1, 2, usableY, windVel, 0, 0);
+		fluid.addEmitter(0, 1, 1, usableY, windVel, 0, 0);
 	}else{
 		fluid.addEmitter(0, 1, 1, usableY, 0, 0, 0);
 	}
@@ -662,6 +692,38 @@ function updateEmitters() {
 		let actualH = Math.min(smokeH, fluid.numY - 1 - startY);
 
 		fluid.addEmitter(0, startY, 2, actualH, windVel, 0, 1.0);
+	}
+}
+
+function updateUIVisibility() {
+	const mode = document.getElementById("select-mode")?.value;
+	const groupPsens = document.getElementById("group-psens");
+	const groupInvert = document.getElementById("group-invert-sp");
+
+	if (!mode || !groupPsens || !groupInvert) return;
+
+	if (mode === "p" || mode === "sp") {
+		groupPsens.style.display = "flex";
+		groupInvert.style.display = "flex";
+	} else {
+		groupPsens.style.display = "none";
+		groupInvert.style.display = "none";
+	}
+}
+
+function updateFPSVisibility() {
+	const isFixed = document.getElementById("check-fps")?.checked;
+	const groupDt = document.getElementById("group-dt");
+	const groupTargetFps = document.getElementById("group-targetfps");
+
+	if (!groupDt || !groupTargetFps) return;
+
+	if (isFixed) {
+		groupDt.style.display = "flex";
+		groupTargetFps.style.display = "flex";
+	} else {
+		groupDt.style.display = "none";
+		groupTargetFps.style.display = "none";
 	}
 }
 
@@ -686,10 +748,12 @@ function frame(currentTime) {
 		}
 
 		// --- 1. MOUSE INTERACTIONS ---
-		if (isMouseDown) {
-			fluid.modifyObstacle(mouseX, mouseY, brushSize, "add");
-		} else if (isRightDown) {
-			fluid.modifyObstacle(mouseX, mouseY, brushSize, "erase");
+		if (!isDraggingImage) {
+			if (isMouseDown) {
+				fluid.applyBrush(mouseX, mouseY, brushSize, "add", brushMode);
+			} else if (isRightDown) {
+				fluid.applyBrush(mouseX, mouseY, brushSize, "erase", brushMode);
+			}
 		}
 
 		// --- 2. PHYSICS ---
@@ -776,6 +840,7 @@ let dragOffsetY = 0;
 let brushSize = 4.0; // Starting radius in grid cells
 const minBrush = 0.5;
 const maxBrush = 100.0;
+let brushMode = "obstacle";
 
 let showPreview = true;
 
@@ -785,6 +850,8 @@ let arrowScale = 0.5;
 let arrowColor = "#00ffff";
 
 let obstacleColor = "#000055";
+
+let invertSmokePressure = false;
 
 let previewImage = new Image();
 let previewImageReady = false;
@@ -1016,6 +1083,12 @@ function syncUI() {
 
 	const colorObs = document.getElementById("color-obstacle");
 	if (colorObs) obstacleColor = colorObs.value;
+
+	const selectBrushMode = document.getElementById("select-brush-mode");
+	if (selectBrushMode) brushMode = selectBrushMode.value;
+
+	const checkInvertSp = document.getElementById("check-invert-sp");
+	if (checkInvertSp) invertSmokePressure = checkInvertSp.checked;
 }
 
 // Attach listeners so they update during runtime
@@ -1073,10 +1146,18 @@ function setupListeners() {
 		document.getElementById("val-targetfps").innerText = targetFps;
 	});
 
-	document.getElementById("check-fps")?.addEventListener("change", (e) => fixedFPS = e.target.checked);
+	document.getElementById("check-fps")?.addEventListener("change", (e) => {
+		fixedFPS = e.target.checked;
+		updateFPSVisibility(); // <--- Add this line!
+	});
+
 	document.getElementById("check-arrows")?.addEventListener("change", (e) => showArrows = e.target.checked);
 	document.getElementById("check-preview")?.addEventListener("change", (e) => showPreview = e.target.checked);
-	document.getElementById("select-mode")?.addEventListener("change", (e) => fluid.showMode = e.target.value);
+	
+	document.getElementById("select-mode")?.addEventListener("change", (e) => {
+		fluid.showMode = e.target.value;
+		updateUIVisibility(); // Trigger UI update on change
+	});
 
 	// --- Grid Setup Listeners ---
 	const checkAspect = document.getElementById("check-aspect");
@@ -1194,6 +1275,14 @@ function setupListeners() {
 		updateEmitters();
 	});
 
+	document.getElementById("select-brush-mode")?.addEventListener("change", (e) => {
+		brushMode = e.target.value;
+	});
+
+	document.getElementById("check-invert-sp")?.addEventListener("change", (e) => {
+		invertSmokePressure = e.target.checked;
+	});
+
 	// Collapsible Logic
 	const headers = document.getElementsByClassName("collapsible-header");
 	for (let i = 0; i < headers.length; i++) {
@@ -1205,4 +1294,6 @@ function setupListeners() {
 
 setupListeners();
 initSimulation();
+updateUIVisibility();
+updateFPSVisibility();
 requestAnimationFrame(frame);
