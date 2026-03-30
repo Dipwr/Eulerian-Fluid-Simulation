@@ -60,6 +60,9 @@
                     <label>Time Step (dt): <span id="val-dt">0.016</span></label>
                     <input type="range" id="slide-dt" min="0.005" max="0.1" step="0.001" value="0.016">
                 </div>
+                <div class="control-group">
+                    <label><input type="checkbox" id="check-pause"> Pause Simulation</label>
+                </div>
             </div>
         </div>
 
@@ -69,7 +72,7 @@
                 <div class="control-group">
                     <label>Display Mode:</label>
                     <select id="select-mode">
-                        <option value="s" selected>Smoke & Obstacles</option>
+                        <option value="s" selected>Smoke</option>
                         <option value="p">Pressure Field</option>
                         <option value="sp">Pressure & Smoke</option>
                         <option value="f">Velocity (Faces)</option>
@@ -179,9 +182,20 @@
             <button class="collapsible-header">Import Obstacle (PNG/SVG)</button>
             <div class="collapsible-content">
                 <div class="control-group">
+                    <label>Preset Shape:</label>
+                    <select id="select-preset">
+                        <option value="" selected>-- Custom Upload --</option>
+                        <option value="obstacles/Aerofoil.svg">Aerofoil</option>
+                        <option value="obstacles/triangle.svg">Triangle</option>
+                        <option value="obstacles/square.svg">Square</option>
+                        <option value="obstacles/hexagon.svg">Hexagon</option>
+                    </select>
+                </div>
+                <div class="control-group">
                     <label>Select File (Transparent BG):</label>
                     <input type="file" id="input-file" accept="image/png, image/svg+xml" style="width: 100%; color: #eee; margin-top: 5px;">
                 </div>
+                <hr>
                 <div class="control-group">
                     <label>Scale: <span id="val-img-scale">0.50</span></label>
                     <input type="range" id="slide-img-scale" min="-2" max="1" step="0.01" value="-0.3">

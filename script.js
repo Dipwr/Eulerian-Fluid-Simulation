@@ -700,14 +700,24 @@ function updateUIVisibility() {
 	const groupPsens = document.getElementById("group-psens");
 	const groupInvert = document.getElementById("group-invert-sp");
 
-	if (!mode || !groupPsens || !groupInvert) return;
+	if (!mode) return;
 
-	if (mode === "p" || mode === "sp") {
-		groupPsens.style.display = "flex";
-		groupInvert.style.display = "flex";
-	} else {
-		groupPsens.style.display = "none";
-		groupInvert.style.display = "none";
+	// Pressure Sensitivity is needed for both 'p' and 'sp' modes
+	if (groupPsens) {
+		if (mode === "p" || mode === "sp") {
+			groupPsens.style.display = "flex";
+		} else {
+			groupPsens.style.display = "none";
+		}
+	}
+
+	// Colorize Smoke is ONLY needed for the 'sp' mode
+	if (groupInvert) {
+		if (mode === "sp") {
+			groupInvert.style.display = "flex";
+		} else {
+			groupInvert.style.display = "none";
+		}
 	}
 }
 
@@ -757,9 +767,11 @@ function frame(currentTime) {
 		}
 
 		// --- 2. PHYSICS ---
-		fluid.applyEmitters();
-		fluid.makeIncompressible(incompIters);
-		fluid.advect(currentDt);
+		if (!isPaused) {
+			fluid.applyEmitters();
+			fluid.makeIncompressible(incompIters);
+			fluid.advect(currentDt);
+		}
 		
 		// --- 3. DRAWING ---
 		fluid.draw([50, 50]);
@@ -796,6 +808,8 @@ let lastFrameTime = 0;
 let targetFps = 60;
 let msPerFrame = 1000 / targetFps;
 
+let isPaused = false;
+
 let fluid;
 function initSimulation() {
 	let width = parseFloat(document.getElementById("input-width").value);
@@ -825,6 +839,8 @@ function initSimulation() {
 	// 5. Setup Boundaries and Emitters
 	updateWalls();
 	updateEmitters();
+
+	fluid.setStaticCircle(Math.floor(fluid.numX/6), Math.floor(fluid.numY/2), Math.floor(fluid.numY/8));
 }
 
 //interaction
@@ -1089,6 +1105,9 @@ function syncUI() {
 
 	const checkInvertSp = document.getElementById("check-invert-sp");
 	if (checkInvertSp) invertSmokePressure = checkInvertSp.checked;
+
+	const checkPause = document.getElementById("check-pause");
+	if (checkPause) isPaused = checkPause.checked;
 }
 
 // Attach listeners so they update during runtime
@@ -1189,31 +1208,55 @@ function setupListeners() {
 
 	// --- Image Import Listeners ---
 	let currentImageUrl = null;
-	
+
+	function loadPreviewImage(src) {
+		previewImage.src = src;
+		previewImage.onload = () => {
+			previewImageReady = true;
+		};
+		currentImageUrl = src;
+	}
+
+	const selectPreset = document.getElementById("select-preset");
 	const inputFile = document.getElementById("input-file");
-	if (inputFile) {
-		inputFile.addEventListener("change", (e) => {
-			const file = e.target.files[0];
-			if (file) {
-				if (currentImageUrl) URL.revokeObjectURL(currentImageUrl);
-				currentImageUrl = URL.createObjectURL(file);
-				
-				// Load it into our preview object
-				previewImage.src = currentImageUrl;
-				previewImage.onload = () => {
-					previewImageReady = true;
-				};
+
+	// Handle Preset Dropdown
+	if (selectPreset) {
+		selectPreset.addEventListener("change", (e) => {
+			const val = e.target.value;
+			if (val !== "") {
+				// Load the preset path
+				loadPreviewImage(val);
+				// Clear the file input visually so the user isn't confused
+				if (inputFile) inputFile.value = "";
+			} else {
+				// Switch back to custom, clear the ghost preview
+				previewImageReady = false;
+				currentImageUrl = null;
 			}
 		});
 	}
 
-	const checkImgPreview = document.getElementById("check-img-preview");
-	if (checkImgPreview) {
-		checkImgPreview.addEventListener("change", (e) => {
-			showImagePreview = e.target.checked;
+	// Handle Custom File Upload
+	if (inputFile) {
+		inputFile.addEventListener("change", (e) => {
+			const file = e.target.files[0];
+			if (file) {
+				// Prevent memory leaks by revoking old blobs (but don't revoke preset string paths!)
+				if (currentImageUrl && currentImageUrl.startsWith('blob:')) {
+					URL.revokeObjectURL(currentImageUrl);
+				}
+				
+				const url = URL.createObjectURL(file);
+				loadPreviewImage(url);
+
+				// Reset the preset dropdown to "Custom Upload"
+				if (selectPreset) selectPreset.value = "";
+			}
 		});
 	}
 
+	// Scale Slider (Logarithmic)
 	document.getElementById("slide-img-scale")?.addEventListener("input", (e) => {
 		const trueScale = Math.pow(10, parseFloat(e.target.value));
 		document.getElementById("val-img-scale").innerText = trueScale.toFixed(2);
@@ -1231,18 +1274,24 @@ function setupListeners() {
 		document.getElementById("val-img-rot").innerText = e.target.value;
 	});
 
+	const checkImgPreview = document.getElementById("check-img-preview");
+	if (checkImgPreview) {
+		checkImgPreview.addEventListener("change", (e) => {
+			showImagePreview = e.target.checked;
+		});
+	}
+
+	// The "Place on Grid" Button
 	const btnImport = document.getElementById("btn-import");
 	if (btnImport) {
 		btnImport.addEventListener("click", () => {
 			if (!currentImageUrl) {
-				alert("Please select an image file first.");
+				alert("Please select a preset or upload an image file first.");
 				return;
 			}
 			
-			// Convert log value to true scale before passing to the fluid engine
 			const logScale = parseFloat(document.getElementById("slide-img-scale").value);
 			const scale = Math.pow(10, logScale);
-			
 			const offsetX = parseInt(document.getElementById("slide-img-x").value);
 			const offsetY = parseInt(document.getElementById("slide-img-y").value);
 			const rot = parseInt(document.getElementById("slide-img-rot").value);
@@ -1281,6 +1330,23 @@ function setupListeners() {
 
 	document.getElementById("check-invert-sp")?.addEventListener("change", (e) => {
 		invertSmokePressure = e.target.checked;
+	});
+
+	document.getElementById("check-pause")?.addEventListener("change", (e) => {
+		isPaused = e.target.checked;
+	});
+
+	// Spacebar hotkey to toggle pause
+	window.addEventListener("keydown", (e) => {
+		// Prevent scrolling if Spacebar is pressed, but only if not typing in an input
+		if (e.code === "Space" && e.target.tagName !== "INPUT") {
+			e.preventDefault(); 
+			isPaused = !isPaused;
+			
+			// Visually update the checkbox in the UI panel
+			const checkPause = document.getElementById("check-pause");
+			if (checkPause) checkPause.checked = isPaused;
+		}
 	});
 
 	// Collapsible Logic
