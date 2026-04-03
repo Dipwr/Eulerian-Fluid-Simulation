@@ -7,7 +7,10 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <canvas id="simulation"></canvas>
+    <canvas width="600" height="600"></canvas>
+    <div id="fps-counter" style="position: absolute; top: 10px; left: 10px; color: white; background: rgba(0,0,0,0.5); padding: 5px; font-family: monospace;">
+        FPS: 0
+    </div>
     <div id="ui-panel">
         <h3>Fluid Controls</h3>
         <div class="collapsible">
@@ -221,6 +224,6 @@
             </div>
         </div>
     </div>
-    <script src="script.js"></script>
+    <script src="scriptGPU.js"></script>
 </body>
 </html>
