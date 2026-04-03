@@ -44,7 +44,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 	let y = index % sim.height;
 
 	let mask = packed_mask[index];
-	if ((mask & 1u) == 0u) { return; }
+	if ((mask & 1u) == 0u) {
+		smoke_out[index] = 0.0;
+		return;
+	}
 
 	// Average the staggered face velocities to get the center velocity
 	let right_idx = index + sim.height;

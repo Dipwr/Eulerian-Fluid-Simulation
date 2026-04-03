@@ -10,13 +10,12 @@ const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
 const gridWidth = 700; 	//even
 const gridHeight = 350;	//even
 
-const width = 1000;
+const dpr = window.devicePixelRatio || 1;
+canvas.width = gridWidth * dpr;
+canvas.height = gridHeight * dpr;
 
 const loWidth = gridWidth / 2;
 const loHeight = gridHeight / 2;
-
-canvas.width = width;
-canvas.height= (width/gridWidth)*gridHeight;
 
 const gridSize = gridWidth * gridHeight;
 
@@ -36,7 +35,7 @@ const incomWorkgroups = Math.ceil((gridWidth * gridHeight/2) / 64);
 let obstaclesNeedUpdate = true;
 
 let incomIter = 250;
-let loIncomIter = 150;
+let loIncomIter = 200;
 
 let lastTime;
 let frameCount = 0;
@@ -45,6 +44,10 @@ const fpsElement = document.getElementById('fps-counter');
 let currentRenderMode = "s"; //s, v, p
 
 let showVectorField = false;
+
+let isLeftDown = false;
+let isRightDown = false;
+const brushRadius = 15.0;
 
 // --- Wind Tunnel Setup ---
 const fanHeight = gridHeight - 2;   
@@ -583,13 +586,13 @@ function setBoundaryWalls(options = {}) {
 	}
 }
 
-function addCircle(circleX, circleY, radius) {
+function addCircle(circleX, circleY, radius, solid) {
 	for (let i = 0; i < gridWidth; i++) {
 		for (let j = 0; j < gridHeight; j++) {
 			const dx = i - circleX;
 			const dy = j - circleY;
 			if (dx * dx + dy * dy < radius * radius) {
-				solidData[i * gridHeight + j] = 0.0;
+				solidData[i * gridHeight + j] = solid;
 			}
 		}
 	}
@@ -609,7 +612,7 @@ function commitObstacles() {
 function setupScene() {
 	clearObstacles();      // 1. Start fresh
 	setBoundaryWalls({top:true, bottom:true, left:true, right:false})
-	addCircle(gridWidth/5, gridHeight/2, gridHeight/10); // 3. Add first obstacle
+	addCircle(gridWidth/7, gridHeight/2, gridHeight/15); // 3. Add first obstacle
 	commitObstacles();     // 5. Update the GPU
 }
 
@@ -771,5 +774,38 @@ async function frame(){
 
 	requestAnimationFrame(frame);
 }
+
+function handleInteraction(e) {
+	const rect = canvas.getBoundingClientRect();
+	const mX = (e.clientX - rect.left)/(canvas.width/gridWidth);
+	const mY = (e.clientY - rect.top)/(canvas.height/gridHeight);
+
+	if (isLeftDown) {
+		addCircle(mX, mY, brushRadius, 0.0);
+	} else if (isRightDown) {
+		addCircle(mX, mY, brushRadius, 1.0);
+	}
+	
+	commitObstacles();
+}
+
+canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+canvas.addEventListener('mousedown', (e) => {
+	if (e.button === 0) isLeftDown = true;
+	if (e.button === 2) isRightDown = true;
+	handleInteraction(e);
+});
+
+window.addEventListener('mouseup', (e) => {
+	if (e.button === 0) isLeftDown = false;
+	if (e.button === 2) isRightDown = false;
+});
+
+canvas.addEventListener('mousemove', (e) => {
+	if (isLeftDown || isRightDown) {
+		handleInteraction(e);
+	}
+});
 
 init()

@@ -83,7 +83,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 	let x = index / sim.height;
 	let y = index % sim.height;
 	let mask = packed_mask[index];
-	if ((mask & 1u) == 0u) { return; }
+	if ((mask & 1u) == 0u) {
+		smoke_out[index] = 0.0;
+		return;
+	}
 
 	// Current center position
 	let pos = vec2<f32>(f32(x), f32(y));

@@ -1,6 +1,5 @@
 
 #ui-panel {
-    position: absolute;
     top: 15px;
     right: 15px;
     width: 240px;
@@ -157,19 +156,19 @@ input[type="number"]:disabled {
 }
 
 .action-btn {
-		margin-top: 10px;
-		width: 100%;
-		padding: 8px;
-		background-color: #008800;
-		color: white;
-		border: none;
-		border-radius: 4px;
-		font-family: monospace;
-		font-weight: bold;
-		cursor: pointer;
-	}
+    margin-top: 10px;
+    width: 100%;
+    padding: 8px;
+    background-color: #008800;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-family: monospace;
+    font-weight: bold;
+    cursor: pointer;
+}
 
-	.action-btn:hover {
-		background-color: #00FF00;
-		color: black;
-	}
+.action-btn:hover {
+    background-color: #00FF00;
+    color: black;
+}

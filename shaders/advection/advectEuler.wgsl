@@ -63,7 +63,10 @@ fn main(@builtin(global_invocation_id) id: vec3<u32>) {
 	let y = index % sim.height;
 
 	let mask = packed_mask[index];
-	if ((mask & 1u) == 0u) {return;}
+	if ((mask & 1u) == 0u) {
+		vel_out[index] = vec2<f32>(0.0, 0.0);
+		return;
+	}
 
 	let center_vel = vel_in[index];
 
